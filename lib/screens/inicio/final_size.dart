@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
-
-
+import 'package:win_optimizer_img/helpers/file_extencions.dart';
+import 'package:file_selector/file_selector.dart';
+import 'dart:io';
+import 'package:image/image.dart' as img;
+// ignore: depend_on_referenced_packages
+import 'package:path/path.dart' as path; // Necesitarás importar este paquete
 
 class FinalSize extends StatefulWidget {
-  const FinalSize({super.key});
+  final List<String> listImages;
+  const FinalSize({super.key, required this.listImages}) ;
 
   @override
   State<FinalSize> createState() => _FinalSizeState();
@@ -17,16 +22,72 @@ class _FinalSizeState extends State<FinalSize> {
   double imageQuality = 1.0;
   String? sourceFile;
 
+  String finalFOlder = "";
+
+
   void _pickExtension(String? extension) {
     setState(() {
-      selectedExtension = extension;
+      selectedExtension = extension.toString();
     });
   }
 
-  // * selecciona el rango de la opctimizacion
-  void _toggleOptimizeImage(bool? value) {
+ 
+
+  // * seleccion de carpeta de destino
+  void _selectDirectory() async {
+    final String? directoryPath = await getDirectoryPath();
+    if (directoryPath != null) {
+        setState(() {
+          finalFOlder = directoryPath;
+        });
+    } else {
+      setState(() {
+          finalFOlder = '';
+        });
+    }
+  }
+
+
+  void compressAndSaveImage(String urlStart,String urlFinish, String extencion, int quality) async {
+      // Rutas de los archivos
+      // Rutas de los archivos
+    String start = urlStart;
+    String finishDir  = urlFinish;
+
+    // Leer la imagen original
+    final imageFile = File(start);
+    final imageBytes = await imageFile.readAsBytes();
+    final originalImage = img.decodeImage(imageBytes);
+
+    if (originalImage == null) {
+      return;
+    }
+
+    // Obtener el nombre base del archivo y cambiar la extensión a .jpg
+    String originalName = path.basenameWithoutExtension(start);
+    String newName = '$originalName.$extencion';
+    String finish = path.join(finishDir, newName);
+
+    // No cambiamos el tamaño de la imagen. Simplemente la volvemos a codificar con calidad ajustada.
+    // Convertir la imagen a formato webp
+    final compressedImage = img.encodeJpg(originalImage, quality: quality); // Ajusta la calidad a un valor más bajo para mayor compresión
+
+    // Guardar la imagen comprimida
+    final outputFile = File(finish);
+    await outputFile.writeAsBytes(compressedImage);
+  }
+
+  void processImages(List<String> imagesUrls, String urlFinish, String extencion, int quality) async {
+    for(String url in imagesUrls) {
+        compressAndSaveImage(url, urlFinish, extencion, quality);
+        addingFilesOptimizated(url);
+    }
+  }
+
+
+  void addingFilesOptimizated(String filePath){
     setState(() {
-      optimizeImage = value ?? false;
+      selectedFiles.add(filePath);
     });
   }
 
@@ -37,12 +98,7 @@ class _FinalSizeState extends State<FinalSize> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const ElevatedButton(
-              onPressed: null,
-              child: Text('Carpeta de destino'),
-            ),
-            const SizedBox(height: 16),
-            const Text('Selected Files:'),
+            const Text('Archivos Optimizados:'),
             Container(
               height: 200,
               decoration: BoxDecoration(
@@ -55,10 +111,15 @@ class _FinalSizeState extends State<FinalSize> {
               ),
             ),
             const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _selectDirectory,
+              child: const Text('Carpeta de destino'),
+            ),
+            const SizedBox(height: 16),
             DropdownButton<String>(
               value: selectedExtension,
-              hint: const Text('Select Extension'),
-              items: ['jpg', 'png', 'gif'].map((extension) {
+              hint: const Text('Archivos'),
+              items: imageExtensions.map((extension) {
                 return DropdownMenuItem(
                   value: extension,
                   child: Text(extension),
@@ -69,7 +130,7 @@ class _FinalSizeState extends State<FinalSize> {
             const SizedBox(height: 16),
             Row(
               children: [
-                const Text('Quality:'),
+                const Text('Optimizar:'),
                 Expanded(
                   child: Slider(
                     value: imageQuality,
@@ -87,17 +148,17 @@ class _FinalSizeState extends State<FinalSize> {
               ],
             ),
             const SizedBox(height: 16),
-            Row(
-              children: [
-                const Text('Optimize Image'),
-                Switch(
-                  value: optimizeImage,
-                  onChanged: _toggleOptimizeImage,
-                ),
-              ],
-            ),
+           
             const SizedBox(height: 16),
-            if (sourceFile != null) Text('Source File: $sourceFile'),
+            ElevatedButton(
+              onPressed: (){
+             
+                int imageOptimization = (100 - (imageQuality * 100).toInt());
+                String extencion = selectedExtension.toString();
+                processImages(widget.listImages,finalFOlder, extencion, imageOptimization);
+              },
+              child: const Text('Convertir'),
+            ),
           ],
         ),
       );

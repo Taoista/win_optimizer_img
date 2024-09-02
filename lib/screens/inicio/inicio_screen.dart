@@ -13,6 +13,25 @@ class InicioScreen extends StatefulWidget {
 
 class _InicioScreenState extends State<InicioScreen> {
 
+  List<String> _listImage = [];
+
+  
+  void addPathImage(List<String> listImage){
+    setState(() {
+      _listImage = listImage;
+    });
+  }
+
+  void cleanListImage(){
+    setState(() {
+      _listImage = [];
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+  }
 
 
   @override
@@ -21,14 +40,14 @@ class _InicioScreenState extends State<InicioScreen> {
       appBar: AppBar(
         title: const Text('Win Optimizer Image'),
       ),
-      body: const Padding(
-        padding:  EdgeInsets.all(16.0),
+      body:  Padding(
+        padding:  const EdgeInsets.all(16.0),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SelectorSize(),
-             SizedBox(width: 16),
-            FinalSize()
+            SelectorSize(addPathImage: addPathImage,cleanListImage:cleanListImage),
+             const SizedBox(width: 16),
+            FinalSize(listImages: _listImage,)
           ],
         ),
       )

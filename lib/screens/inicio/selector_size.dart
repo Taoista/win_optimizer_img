@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 
-
 import 'package:win_optimizer_img/helpers/file_extencions.dart';
 import 'package:file_picker/file_picker.dart';
 
 
 
 class SelectorSize extends StatefulWidget {
-  const SelectorSize({super.key});
+
+  final Function(List<String>) addPathImage;
+  final Function() cleanListImage;
+
+  const SelectorSize({super.key, required, required this.addPathImage, required this.cleanListImage});
 
   @override
   State<SelectorSize> createState() => _SelectorSizeState();
@@ -36,15 +39,15 @@ class _SelectorSizeState extends State<SelectorSize> {
         // Verificar si la extensión está en la lista de extensiones de imagen
         return imageExtensions.contains(extension);
       }).toList();
-      setState(() {
-            _filePaths = imageFiles;
-      });
+      _filePaths = imageFiles;
+      widget.addPathImage(imageFiles);
     }
   }
 
   void _cleanListFilesSelected(){
     setState(() {
       _filePaths = [];
+      widget.cleanListImage();
     });
   }
 
@@ -54,16 +57,7 @@ class _SelectorSizeState extends State<SelectorSize> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ElevatedButton(
-              onPressed: _pickFolder,
-              child: const Text('Seleccionar Carpeta'),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _cleanListFilesSelected,
-              child: const Text('Limpiar Lista'),
-            ),
-            const SizedBox(height: 16),
+          
             const Text('Lista de Archivos:'),
             Container(
               height: 200,
@@ -75,6 +69,17 @@ class _SelectorSizeState extends State<SelectorSize> {
                     .map((file) => ListTile(title: Text(file)))
                     .toList(),
               ),
+            ),
+            const SizedBox(height: 16),
+
+              ElevatedButton(
+              onPressed: _pickFolder,
+              child: const Text('Seleccionar Carpeta'),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _cleanListFilesSelected,
+              child: const Text('Limpiar Lista'),
             ),
           ],
         ),
