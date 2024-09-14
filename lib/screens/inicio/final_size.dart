@@ -4,11 +4,16 @@ import 'package:file_selector/file_selector.dart';
 import 'dart:io';
 import 'package:image/image.dart' as img;
 // ignore: depend_on_referenced_packages
-import 'package:path/path.dart' as path; // Necesitarás importar este paquete
+import 'package:path/path.dart' as path;
+import 'package:win_optimizer_img/widgets/button_loading.dart'; // Necesitarás importar este paquete
 
 class FinalSize extends StatefulWidget {
   final List<String> listImages;
-  const FinalSize({super.key, required this.listImages}) ;
+
+  final Function(List) modifyProgreesInicator;
+
+
+  const FinalSize({super.key, required this.listImages, required this.modifyProgreesInicator});
 
   @override
   State<FinalSize> createState() => _FinalSizeState();
@@ -24,6 +29,11 @@ class _FinalSizeState extends State<FinalSize> {
 
   String finalFOlder = "";
 
+  bool isLoading = false;
+
+  int totalImageFinished = 0;
+
+  bool _stateButton = false;
 
   void _pickExtension(String? extension) {
     setState(() {
@@ -48,11 +58,11 @@ class _FinalSizeState extends State<FinalSize> {
   }
 
 
-  void compressAndSaveImage(String urlStart,String urlFinish, String extencion, int quality) async {
-      // Rutas de los archivos
-      // Rutas de los archivos
+  Future<bool> compressAndSaveImage(String urlStart,String urlFinish, String extencion, int quality) async {
+    // Rutas de los archivos
     String start = urlStart;
     String finishDir  = urlFinish;
+
 
     // Leer la imagen original
     final imageFile = File(start);
@@ -60,7 +70,7 @@ class _FinalSizeState extends State<FinalSize> {
     final originalImage = img.decodeImage(imageBytes);
 
     if (originalImage == null) {
-      return;
+      return false;
     }
 
     // Obtener el nombre base del archivo y cambiar la extensión a .jpg
@@ -75,13 +85,47 @@ class _FinalSizeState extends State<FinalSize> {
     // Guardar la imagen comprimida
     final outputFile = File(finish);
     await outputFile.writeAsBytes(compressedImage);
+    return true;
   }
 
-  void processImages(List<String> imagesUrls, String urlFinish, String extencion, int quality) async {
-    for(String url in imagesUrls) {
-        compressAndSaveImage(url, urlFinish, extencion, quality);
-        addingFilesOptimizated(url);
+  // * procesando imagen de seleccion
+  Future<bool> processImages(List<String> imagesUrls, String urlFinish, String extencion, int quality) async {
+    
+    // ? control de seleccion de archivos de origen
+    if(imagesUrls.isEmpty){
+      _alertErrorNotImagesSelected(context);
+      return false;
     }
+    // ? control de destino
+    if(urlFinish == ''){
+      _alertErrorNotFinishUrl(context);
+      return false;
+    }
+    // ? control de extencion
+    if(selectedExtension == null){
+      _alertErrorNotExtension(context);
+      return false;
+    }
+
+    // ? control de destino
+    setState(() {
+      _stateButton = true;
+    });
+    List<bool> finishied = [];
+    for(String url in imagesUrls) {
+        bool result = await compressAndSaveImage(url, urlFinish, extencion, quality);
+        addingFilesOptimizated(url);
+        finishied.add(result);
+        widget.modifyProgreesInicator(finishied);
+        setState(() {
+          totalImageFinished = finishied.length;
+        });
+    }
+     setState(() {
+      _stateButton = false;
+    });
+    _alertSuccess(context);
+    return true;
   }
 
 
@@ -98,7 +142,7 @@ class _FinalSizeState extends State<FinalSize> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Archivos Optimizados:'),
+            Text('Archivos Optimizados: $totalImageFinished'),
             Container(
               height: 200,
               decoration: BoxDecoration(
@@ -149,10 +193,12 @@ class _FinalSizeState extends State<FinalSize> {
             ),
             const SizedBox(height: 16),
            
-            const SizedBox(height: 16),
+            const SizedBox(height: 16),     
+            isLoading ?
+            const ElevatedButton(onPressed: null, child: null):
+            _stateButton ? const ButtonLoading() :
             ElevatedButton(
-              onPressed: (){
-             
+               onPressed: (){
                 int imageOptimization = (100 - (imageQuality * 100).toInt());
                 String extencion = selectedExtension.toString();
                 processImages(widget.listImages,finalFOlder, extencion, imageOptimization);
@@ -163,4 +209,85 @@ class _FinalSizeState extends State<FinalSize> {
         ),
       );
   }
+
+  void _alertErrorNotExtension(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Error'),
+          content: const Text('Debe seleccionar la extensión para continuar.'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('ok'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _alertErrorNotImagesSelected(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Error'),
+          content: const Text('Debe seleccionar imágenes para convertir.'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('ok'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+  void _alertErrorNotFinishUrl(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Error'),
+          content: const Text('Debe seleccionar ruta final.'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('ok'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _alertSuccess(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Termino'),
+          content: const Text('Las imagenes terminar de convertir.'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('ok'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
 }

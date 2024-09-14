@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:win_optimizer_img/helpers/file_extencions.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:win_optimizer_img/widgets/button_loading.dart';
 
 
 
@@ -19,14 +20,21 @@ class SelectorSize extends StatefulWidget {
 
 class _SelectorSizeState extends State<SelectorSize> {
 
+  bool loadingImage = false;
+  int totalImage = 0;
+
   List<String> _filePaths = [];
 
+    // * selecciona los archivos
     void _pickFolder() async {
-    // Open the folder picker dialog
+    // aabre al ventana del filedialog
     final result = await FilePicker.platform.getDirectoryPath();
 
     if (result != null) {
-      // Get all files in the selected directory
+      setState(() {
+        loadingImage = true;
+      });
+      // ? toma todas la imasgenes del directorio
       final directory = Directory(result);
       final List<FileSystemEntity> entities = directory.listSync();
       
@@ -39,8 +47,13 @@ class _SelectorSizeState extends State<SelectorSize> {
         // Verificar si la extensión está en la lista de extensiones de imagen
         return imageExtensions.contains(extension);
       }).toList();
+      
       _filePaths = imageFiles;
       widget.addPathImage(imageFiles);
+       setState(() {
+        loadingImage = false;
+        totalImage = _filePaths.length;
+      });
     }
   }
 
@@ -48,6 +61,7 @@ class _SelectorSizeState extends State<SelectorSize> {
     setState(() {
       _filePaths = [];
       widget.cleanListImage();
+       totalImage = _filePaths.length;
     });
   }
 
@@ -57,8 +71,7 @@ class _SelectorSizeState extends State<SelectorSize> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-          
-            const Text('Lista de Archivos:'),
+            Text('Lista de Archivos: $totalImage'),
             Container(
               height: 200,
               decoration: BoxDecoration(
@@ -71,7 +84,7 @@ class _SelectorSizeState extends State<SelectorSize> {
               ),
             ),
             const SizedBox(height: 16),
-
+              loadingImage ? const ButtonLoading() :
               ElevatedButton(
               onPressed: _pickFolder,
               child: const Text('Seleccionar Carpeta'),
@@ -79,7 +92,7 @@ class _SelectorSizeState extends State<SelectorSize> {
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _cleanListFilesSelected,
-              child: const Text('Limpiar Lista'),
+              child: const Text('Limpiar'),
             ),
           ],
         ),
