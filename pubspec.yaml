@@ -39,6 +39,7 @@ dependencies:
   file_selector: ^1.0.3
   image: ^4.0.15
   bitsdojo_window: ^0.1.6
+  flutter_launcher_icons: ^0.13.1
 
 
 dev_dependencies:
@@ -53,6 +54,19 @@ dev_dependencies:
   flutter_lints: ^3.0.0
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
+flutter_launcher_icons:
+  web:
+    generate: true
+    image_path: "assets/images/logo.png"
+    background_color: "#hexcode"
+    theme_color: "#hexcode"
+  windows:
+    generate: true
+    image_path: "assets/images/logo.png"
+    icon_size: 48 # min:48, max:256, default: 48
+  macos:
+    generate: true
+    image_path: "assets/images/logo.png"
 
 # The following section is specific to Flutter packages.
 flutter:
